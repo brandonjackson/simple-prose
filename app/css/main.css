@@ -4,8 +4,13 @@
    Author's custom styles
    ========================================================================== */
 
+.container{
+  width: 700px;
+}
 
-
+form#pasteForm{ 
+  margin-top: 50px;
+}
 
 
 
