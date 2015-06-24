@@ -5,23 +5,35 @@
    ========================================================================== */
 
 .container{
-  width: 700px;
+}
+
+h1{
+	margin-bottom: 40px;
 }
 
 form#pasteForm{ 
-  margin-top: 50px;
 }
 
+#results {
+	font-size: 2em;
+}
 
+#results .basic {}
 
+#results.show-basic-english .complex {
+	text-decoration: underline;
+}
+#results.hide-ngram-variable-colors .common{
+	color: #000 !important;
+}
+#results.hide-ngram-variable-colors .uncommon{
+	color: #DDD !important;
+}
 
+#results.hide-ngram .common, #results.hide-ngram .uncommon {
+	color: #000 !important;
+}
 
-
-
-
-
-
-
-
-
-
+#controls input[type=checkbox]{
+	margin-right: 10px;
+}

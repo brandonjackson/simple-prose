@@ -18,6 +18,9 @@
             }
         </style>
         <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/jquery-ui.css">
+        <link rel="stylesheet" href="css/jquery-ui.structure.css">
+        <link rel="stylesheet" href="css/jquery-ui.theme.css">
         <link rel="stylesheet" href="css/main.css">
 
         <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
@@ -29,8 +32,11 @@
 
     <div class="container">
       
-      <h1>Easy Reader</h1>
+      <div class="col-md-12">
+        <h1>Easy Reader</h1>
+      </div>
 
+      <div class="col-md-8">
       <form id="pasteForm">
         <div class="form-group">
           <label for="pastedText">Paste Text Here</label>
@@ -38,18 +44,51 @@
         </div>
         <button type="submit" class="btn btn-default">Submit</button>
       </form>
-      
 
-      <hr>
+      <div id="results" style="display: none;" class="hide-ngram-variable-colors show-ngram"></div>
 
-      <footer>
-        <p>Easy-Reader By Brandon Jackson | <a href="https://github.com/brandonjackson/easy-reader">Fork Me On GitHub</a></p>
-      </footer>
+      </div>
+
+
+
+      <div class="col-md-4">
+        <div id="controls" style="display: none;">
+          
+          <div class="panel panel-default" id="ngram-controls">
+            <div class="panel-heading">
+              <h3 class="panel-title"><label for="toggle-ngram"><input type="checkbox" name="toggle-ngram"  id="toggle-ngram" checked />NGram Analysis</label></h3>
+            </div>
+            <div class="panel-body">
+              <div id="slider"></div>
+              <p>Threshold: <span id="ngram-threshold"></span></p>
+              <label for="ngram-variable"><input type="checkbox" name="ngram-variable" id="ngram-variable" />Variable colors</label>
+            </div>
+          </div>
+
+          <div class="panel panel-default" id="basic-english-controls">
+            <div class="panel-heading">
+              <h3 class="panel-title"><label for="toggle-basic-english"><input type="checkbox" name="toggle-basic-english" id="toggle-basic-english" />Basic English</label>
+            </div>
+<!--             <div class="panel-body">
+            </div>
+ -->          </div>
+
+        </div>
+      </div>
+      <div class="col-md-12">
+        <hr>
+        <footer>
+          <p>Easy-Reader By Brandon Jackson | <a href="https://github.com/brandonjackson/easy-reader">Fork Me On GitHub</a></p>
+        </footer>
+      </div>
     </div> <!-- /container -->        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
 
         <script src="js/vendor/bootstrap.min.js"></script>
-
+        <script src="js/vendor/underscore.js"></script>
+        <script src="js/vendor/underscore.inflections.js"></script>
+        <script src="js/vendor/jquery-ui.js"></script>
+        <!--<script src="js/ten-thousand-words.js"></script>-->
         <script src="js/main.js"></script>
     </body>
 </html>
