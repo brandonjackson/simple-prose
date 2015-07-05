@@ -5,31 +5,122 @@ var dictionaryRanked,
 
 function Corpus(string){
   this.string = string;
+
+  // PROCESS STRING
+  // replace "..." with ellipsis character to make sentence splitting work
+  this.string = this.string.replace(/\.\.\./g,"\u2026");
+
   this.text = [];
-  var paragraphs = string.split("\n");
+  this.sentences = [];
+  var paragraphs = this.string.split("\n");
   for(var i = 0; i < paragraphs.length; i++){
-    var words = [];
-    var tokens = paragraphs[i].split(" ");
-    for(var j = 0; j < tokens.length; j++){
-      words.push({
-        "token": tokens[j],
-        "word": this.cleanToken(tokens[j]),
-        "wordSingular": this.singularizeToken(tokens[j]),
-        "syllables": this.countSyllables(this.cleanToken(tokens[j])),
-        "isExcluded": this.isExcludedToken(tokens[j]) // is this still needed?
-      });
+    var paragraph = this.createParagraph(paragraphs[i]);
+    if(paragraph!==false){
+      this.text.push(paragraph);
     }
-    this.text.push(words);
   }
   this.ngramAnalysis();
   this.basicEnglishAnalysis();
+  this.sentenceReadabilityAnalysis();
 }
+
+Corpus.prototype.createParagraph = function(string){
+  string = string.trim();
+  if(string.length===0){
+    return false;
+  }
+
+  // HACK: make sure paragraph ends with punctuation
+  // if not, then add one. this fixes a bug where sentences at the
+  // end of the paragraph without punctuation were disappearing
+  // @todo remove this period later?
+  if(string.slice(-1).match(/[\.!\?]/) == null){
+    string += ".";
+    var period_added = true;
+  }
+
+  var segments = string.match( /[^\.!\?]+[\.!\?]+/g );
+  
+  // // if no punctuation found, then treat entire string as one segment
+  // if(segments==null){
+  //   segments = [string];
+  // }
+
+  var sentences = [];
+  var nWords = 0;
+  var nComplexWords = 0;
+  var nSyllables = 0;
+  for(var i = 0; i < segments.length; i++){
+
+    // HACK: remove period if we addd it earlier
+    if(i + 1 == segments.length && period_added){
+      segments[i] = segments[i].slice(0,-1);
+    }
+
+    var sentence = this.createSentence(segments[i]);
+    if(sentence!==false){
+      nWords += sentence.nWords;
+      nComplexWords += sentence.nComplexWords;
+      nSyllables += sentence.nSyllables;
+      sentences.push(sentence);
+    }
+    this.sentences.push(sentence);
+  }
+  if(sentences.length==0){
+    return false;
+  }
+  return {
+    "type": "paragraph",
+    "sentences": sentences,
+    "string": string,
+    "nWords": nWords,
+    "nComplexWords": nComplexWords,
+    "nSyllables": nSyllables,
+    "nSentences": sentences.length
+  };
+}
+
+Corpus.prototype.createSentence = function(string){
+  string = string.trim();
+  var tokens = string.split(" ");
+  var words = [];
+  var nComplexWords = 0;
+  var nSyllables = 0;
+  for(var i = 0; i < tokens.length; i++){
+
+    var word = this.createWord(tokens[i]);
+    if(word.nSyllables >= 3){
+      nComplexWords++;
+    }
+    nSyllables += word.nSyllables;
+    words.push(word);
+  }
+  return {
+    "type": "sentence",
+    "words": words,
+    "string": string,
+    "nWords": words.length,
+    "nComplexWords": nComplexWords,
+    "nSyllables": nSyllables
+  };
+}
+
+Corpus.prototype.createWord = function(string){
+    return {
+      "type": "word",
+      "token": string,
+      "word": this.cleanToken(string),
+      "wordSingular": this.singularizeToken(string),
+      "nSyllables": this.countSyllables(this.cleanToken(string)),
+      "isExcluded": this.isExcludedToken(string) // is this still needed?
+    };
+}
+
 
 Corpus.prototype.getWordCount = function(){
   var count = 0;
   for(var i = 0; i < this.text.length; i++){
-    var validWords = _.where(this.text[i],{ "isExcluded": false });
-    count += validWords.length;
+    count += this.text[i].nWords;
   }
   return count;
 };
@@ -37,35 +128,19 @@ Corpus.prototype.getWordCount = function(){
 Corpus.prototype.getSyllableCount = function(){
   var count = 0;
   for(var i = 0; i < this.text.length; i++){
-    for(var j = 0; j < this.text[i].length; j++){
-      count += this.text[i][j].syllables;
-    }
+    count += this.text.nSyllables;
   }
   return count;
 };
 
 Corpus.prototype.getSentenceCount = function(){
-  var sentences = this.string.split(/[.|!|?]\s/gi);
-  return sentences.length;
+  var count = 0;
+  for(var i = 0; i < this.text.length; i++){
+    count += this.text.nSentences;
+  }
+  return count;
 };
 
-Corpus.prototype.getReadabilityEase = function(){
-  return 206.835 - 1.015 * (this.getWordCount() / this.getSentenceCount()) - 84.6 * (this.getSyllableCount() / this.getWordCount());
-};
-
-Corpus.prototype.getGradeLevel = function(){
-  return 0.39 * (this.getWordCount() / this.getSentenceCount()) + 11.8 * (this.getSyllableCount() / this.getWordCount()) - 15.59;
-};
-
-Corpus.prototype.toString = function(){
-  var str = ""
-  var paragraph_strings = []
-  _.each(this.text, function(paragraph, key){
-    tokens = _.pluck(paragraph, "token");
-    paragraph_strings.push(tokens.join(" "));
-  });
-  return paragraph_strings.join("\n");
-};
 
 Corpus.prototype.singularizeToken = function(token){
   token = this.cleanToken(token);
@@ -90,7 +165,14 @@ Corpus.prototype.countSyllables = function(word){
   if(word.length <= 3) { return 1; }                             //return 1 if word.length <= 3
   word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');   //word.sub!(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '')
   word = word.replace(/^y/, '');                                 //word.sub!(/^y/, '')
-  return word.match(/[aeiouy]{1,2}/g).length;                    //word.scan(/[aeiouy]{1,2}/).size
+
+  // try block catches words without vowels
+  try{
+    var matches = word.match(/[aeiouy]{1,2}/g);
+    return matches.length;                    //word.scan(/[aeiouy]{1,2}/).size
+  } catch(e){
+    return 1;
+  }
 };
 
 Corpus.prototype.isExcludedToken = function(token){
@@ -102,25 +184,92 @@ Corpus.prototype.isExcludedToken = function(token){
 
 Corpus.prototype.ngramAnalysis = function(){
   for(var i = 0; i < this.text.length; i++){
-    for(var j = 0; j < this.text[i].length; j++){
-      this.text[i][j].ngramRank = dictionaryRanked[this.text[i][j].word];
+    for(var j = 0; j < this.text[i].sentences.length; j++){
+      for(var k = 0; k < this.text[i].sentences[j].words.length; k++){
+        var word = this.text[i].sentences[j].words[k].word;
+        this.text[i].sentences[j].words[k].ngramRank = dictionaryRanked[word];
+      }
     }
   }
 };
 
 Corpus.prototype.basicEnglishAnalysis = function(){
   for(var i = 0; i < this.text.length; i++){
-    for(var j = 0; j < this.text[i].length; j++){
-      // check for both singularized and normal version of words to prevent bug where
-      // "is" is simplified to "i" and is unfairly excluded
-      var hasWord = _.contains(dictionaryBasic,this.text[i][j].word);
-      var hasWordSingular = _.contains(dictionaryBasic,this.text[i][j].wordSingular);
-      this.text[i][j].isBasicEnglish = hasWord || hasWordSingular; 
+    for(var j = 0; j < this.text[i].sentences.length; j++){
+      for(var k = 0; k < this.text[i].sentences[j].words.length; k++){
+        var word = this.text[i].sentences[j].words[k].word;
+        var wordSingular = this.text[i].sentences[j].words[k].wordSingular;
+        // check for both singularized and normal version of words to prevent bug where
+        // "is" is simplified to "i" and is unfairly excluded
+        var hasWord = _.contains(dictionaryBasic, word);
+        var hasWordSingular = _.contains(dictionaryBasic, wordSingular);
+        this.text[i].sentences[j].words[k].isBasicEnglish = hasWord || hasWordSingular; 
+      }
     }
   }
 };
 
-var Renderer = (function(){
+Corpus.prototype.sentenceReadabilityAnalysis = function(){
+  var SLICE_SIZE = 15; // MUST BE AN ODD NUMBER!
+  var PAD = (SLICE_SIZE-1) / 2;
+  var nSentences = this.sentences.length;
+  for(var i = 0; i < nSentences; i++){
+    var indices = [];
+    if(nSentences <= SLICE_SIZE){
+      indices = _.range(nSentences);
+    } else if(i < PAD){
+      indices = _.range(SLICE_SIZE);
+    } else if((i + PAD) >= nSentences){
+      indices = _.range(nSentences - SLICE_SIZE, nSentences);
+    } else {
+      indices = _.range(i-PAD,i+PAD+1);
+    }
+    var results = this.sliceReadabilityAnalysis(indices);
+    this.sentences[i].readabilityEase = results.readabilityEase;
+    this.sentences[i].gradeLevel = results.gradeLevel;
+    this.sentences[i].smogGradeLevel = results.smogGradeLevel;
+  }
+};
+
+Corpus.prototype.sliceReadabilityAnalysis = function(indices){
+  var nWords = 0;
+  var nSyllables = 0;
+  var nComplexWords = 0;
+  var nSentences = indices.length;
+  for(var i = 0; i < indices.length; i++){
+    nWords += this.sentences[indices[i]].nWords;
+    nSyllables += this.sentences[indices[i]].nSyllables;
+    nComplexWords += this.sentences[indices[i]].nComplexWords;
+  }
+
+  return {
+    "readabilityEase": this.calculateReadabilityEase(nSyllables, nWords, nSentences),
+    "gradeLevel": this.calculateGradeLevel(nSyllables, nWords, nSentences),
+    "smogGradeLevel": this.calculateSmogGradeLevel(nComplexWords, nSentences)
+  }
+};
+
+Corpus.prototype.getReadabilityEase = function(){
+  return this.calculateReadabilityEase(this.getSyllableCount(), this.getWordCount(), this.getSentenceCount());
+};
+
+Corpus.prototype.getGradeLevel = function(){
+  return this.calculateGradeLevel(this.getSyllableCount(), this.getWordCount(), this.getSentenceCount());
+};
+
+Corpus.prototype.calculateGradeLevel = function(nSyllables, nWords, nSentences){
+  return 0.39 * (nWords / nSentences) + 11.8 * (nSyllables / nWords) - 15.59;
+};
+
+Corpus.prototype.calculateReadabilityEase = function(nSyllables, nWords, nSentences){
+  return 206.835 - 1.015 * (nWords / nSentences) - 84.6 * (nSyllables / nWords);
+};
+
+Corpus.prototype.calculateSmogGradeLevel = function(nComplexWords, nSentences){
+  return 1.043 * Math.sqrt(nComplexWords * (30 / nSentences)) + 3.1291
+}
+
+var ParagraphRenderer = (function(){
 
   var api = {};
 
@@ -131,11 +280,13 @@ var Renderer = (function(){
     var html = "";
     for(var i = 0; i < corpus.text.length; i++){
       html += "<p>";
-      for(var j = 0; j < corpus.text[i].length; j++){
-        if(_.isFunction(spanFunction)){
-          html += spanFunction(corpus.text[i][j]);
-        } else {
-          html += corpus.text[i][j].token;
+      for(var j = 0; j < corpus.text[i].sentences.length; j++){
+        for(var k = 0; k < corpus.text[i].sentences[j].words.length; k++){
+          if(_.isFunction(spanFunction)){
+            html += spanFunction(corpus.text[i].sentences[j].words[k]);
+          } else {
+            html += corpus.text[i].sentences[j].words[k].token;
+          }
         }
       }
       html += "</p>";
@@ -143,18 +294,84 @@ var Renderer = (function(){
     return html;
   };
 
-  // api.renderNgrams = function(corpus, threshold){
-  //   threshold = typeof threshold !== 'undefined' ? threshold : 5000;
-  //   return api.render(corpus, function(word){
-  //     var color = rankToColorString(word.ngramRank, threshold);
-  //     var title = "ngram rank = " + word.ngramRank;
+  api.renderAnalyses = function(corpus, threshold){
+    threshold = typeof threshold !== 'undefined' ? threshold : NGRAM_THRESHOLD;
+    return api.render(corpus, function(word){
+      var color = rankToColorString(word.ngramRank, threshold);
+      var wordClass = word.isBasicEnglish ? "basic" : "complex";
+      wordClass += word.ngramRank < threshold ? " common" : " uncommon"
+      var title = "ngram rank = " + word.ngramRank;
       
-  //     var span = "<span style='color: " + color + ";' title='"+title+"'>";
-  //     span += word.token
-  //     span += "</span> ";
-  //     return span;
-  //   });
-  // };
+      var span = "<span style='color: " + color + ";' class='" + wordClass + "' title='"+title+"'>";
+      span += word.token
+      span += "</span> ";
+      return span;
+    });
+  };
+
+  function rankToColorString(rank, threshold){
+  // returns css color string
+    if(rank===undefined || rank > threshold){
+      var rgb = LIGHTEST_RGB;
+    } else {
+      rgb = Math.round(LIGHTEST_RGB * (rank / threshold));
+    }
+    return "rgb(" + rgb + ", " + rgb + ", " + rgb + ")";
+  }
+
+  return api;
+
+}());
+
+var SentenceRenderer = (function(){
+
+  var api = {};
+
+  LIGHTEST_RGB = 220;
+
+  api.render = function(corpus, spanFunction){
+
+    var html = "";
+    for(var i = 0; i < corpus.text.length; i++){
+      for(var j = 0; j < corpus.text[i].sentences.length; j++){
+        var ease = corpus.text[i].sentences[j].readabilityEase;
+        var level = corpus.text[i].sentences[j].gradeLevel;
+        var smog = corpus.text[i].sentences[j].smogGradeLevel;
+        console.log("smog = " + smog)
+        html += "<div class='row'>";
+        html += "<div class='col-lg-2'>";
+        html += "<div class='progress'>";
+
+        // // Display readability ease
+        // html += "<div class='progress-bar' role='progressbar' aria-valuenow='" + ease + "' aria-valuemin='0' aria-valuemax='100' style='width: " + Math.floor(ease) + "%;'>";
+        // html += Math.floor(ease) + "%";
+        // html += "</div>";
+
+        // Display SMOG grade level
+        html += "<div class='progress-bar' role='progressbar' aria-valuenow='" + ease + "' aria-valuemin='0' aria-valuemax='12' style='width: " + Math.floor((smog/12)*100) + "%;'>";
+        html += "Grade " + smog.toFixed(1);
+        html += "</div>";
+
+
+        html += "</div>";
+        html += "</div>";
+        html += "<div class='col-lg-10'>";
+        html += "<p class='sentence'>";
+        for(var k = 0; k < corpus.text[i].sentences[j].words.length; k++){
+          if(_.isFunction(spanFunction)){
+            html += spanFunction(corpus.text[i].sentences[j].words[k]);
+          } else {
+            html += corpus.text[i].sentences[j].words[k].token;
+          }
+        }
+        html += "</p>";
+        html += "</div>";
+        html += "</div>";
+      }
+      html += "<hr />";
+    }
+    return html;
+  };
 
   api.renderAnalyses = function(corpus, threshold){
     threshold = typeof threshold !== 'undefined' ? threshold : NGRAM_THRESHOLD;
@@ -205,7 +422,7 @@ $(function(){
     range: "min",
     slide: function(e, ui){
       $("#ngram-threshold").text(ui.value);
-      var results = Renderer.renderAnalyses(C, ui.value);
+      var results = SentenceRenderer.renderAnalyses(C, ui.value);
       $("#results").html(results);
     }
   });
@@ -237,7 +454,8 @@ $(function(){
     $("form#pasteForm textarea#pastedText").attr("disabled","");
     $("form#pasteForm").hide();
     C = new Corpus(pastedText);
-    var results = Renderer.renderAnalyses(C);
+    C.getSentenceCount();
+    var results = SentenceRenderer.renderAnalyses(C);
     $("#results").html(results).fadeIn();
     $("#controls").fadeIn();
     event.preventDefault();

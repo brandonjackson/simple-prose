@@ -15,7 +15,11 @@ form#pasteForm{
 }
 
 #results {
-	font-size: 2em;
+	font-size: 0.9em;
+}
+
+#results p.sentence {
+	font-size: 1em;
 }
 
 #results .basic {}
@@ -32,6 +36,13 @@ form#pasteForm{
 
 #results.hide-ngram .common, #results.hide-ngram .uncommon {
 	color: #000 !important;
+}
+
+#results .progress {
+	margin-bottom: 0px;
+}
+#results hr {
+	margin: 0 0 5px;
 }
 
 #controls input[type=checkbox]{
