@@ -323,6 +323,65 @@ var ParagraphRenderer = (function(){
 
 }());
 
+var ChartRenderer = (function(){
+
+  var api = {};
+
+  api.render = function(corpus){
+
+    var nSentences = corpus.sentences.length;
+    var width = nSentences * 30;
+
+    var x = _.pluck(corpus.sentences,"string");
+    x.unshift('x');
+
+    var smog = _.pluck(corpus.sentences,"smogGradeLevel");
+    smog.unshift('smog');
+
+    var ease = _.pluck(corpus.sentences,"readabilityEase");
+    ease.unshift('ease');
+
+    var chart = c3.generate({
+      data: {
+        x : 'x',
+        columns: [
+            x, 
+            smog,
+            ease
+        ],
+        type: 'spline',
+        axes: {
+          smog: 'y',
+          ease: 'y2'
+        }
+      },
+      axis: {
+          x: {
+              type: 'category',
+              tick: {
+                  rotate: 20,
+                  multiline: false
+              },
+              height: 400
+          },
+          y2: {
+            show: true
+          }
+      },
+      size: {
+        height: 600,
+        width: width
+      },
+      padding: {
+        right: 200
+      }
+    });
+  };
+
+  return api;
+
+}());
+
 var SentenceRenderer = (function(){
 
   var api = {};
@@ -450,14 +509,25 @@ $(function(){
   });
 
   $("form#pasteForm").submit(function(event){
+
+    // Get the pasted text
     var pastedText = $("form#pasteForm textarea#pastedText").val();
     $("form#pasteForm textarea#pastedText").attr("disabled","");
     $("form#pasteForm").hide();
+
+    // Run processing
     C = new Corpus(pastedText);
-    C.getSentenceCount();
-    var results = SentenceRenderer.renderAnalyses(C);
-    $("#results").html(results).fadeIn();
-    $("#controls").fadeIn();
+
+    // Render results
+    if($("form#pasteForm input#format-chart").is(":checked")){
+      ChartRenderer.render(C);
+      $("#chart").fadeIn();
+    } else {
+      var results = SentenceRenderer.renderAnalyses(C);
+      $("#results").html(results).fadeIn();
+      $("#controls").fadeIn();      
+    }
+
     event.preventDefault();
     pasted = pastedText;
   });
