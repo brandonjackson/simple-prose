@@ -382,7 +382,7 @@ var ChartRenderer = (function(){
 
 }());
 
-var SentenceRenderer = (function(){
+var TextRenderer = (function(){
 
   var api = {};
 
@@ -481,7 +481,7 @@ $(function(){
     range: "min",
     slide: function(e, ui){
       $("#ngram-threshold").text(ui.value);
-      var results = SentenceRenderer.renderAnalyses(C, ui.value);
+      var results = TextRenderer.renderAnalyses(C, ui.value);
       $("#results").html(results);
     }
   });
@@ -523,7 +523,7 @@ $(function(){
       ChartRenderer.render(C);
       $("#chart").fadeIn();
     } else {
-      var results = SentenceRenderer.renderAnalyses(C);
+      var results = TextRenderer.renderAnalyses(C);
       $("#results").html(results).fadeIn();
       $("#controls").fadeIn();      
     }
