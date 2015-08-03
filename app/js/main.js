@@ -266,7 +266,7 @@ Corpus.prototype.calculateReadabilityEase = function(nSyllables, nWords, nSenten
 };
 
 Corpus.prototype.calculateSmogGradeLevel = function(nComplexWords, nSentences){
-  return 1.043 * Math.sqrt(nComplexWords * (30 / nSentences)) + 3.1291
+  return 1.043 * Math.sqrt(nComplexWords * (30 / nSentences)) + 3.1291;
 }
 
 var ParagraphRenderer = (function(){
@@ -336,23 +336,24 @@ var ChartRenderer = (function(){
     x.unshift('x');
 
     var smog = _.pluck(corpus.sentences,"smogGradeLevel");
-    smog.unshift('smog');
+    for(var i = 0; i < smog.length; i++){
+      smog[i] = smog[i].toFixed(1);
+    }
+    smog.unshift('SMOG Reading Level'); // adds name of metric for use in c3 display
 
     var ease = _.pluck(corpus.sentences,"readabilityEase");
-    ease.unshift('ease');
+    ease.unshift('ease'); // adds name of metric for use in c3 display
 
     var chart = c3.generate({
       data: {
         x : 'x',
         columns: [
             x, 
-            smog,
-            ease
+            smog
         ],
         type: 'spline',
         axes: {
-          smog: 'y',
-          ease: 'y2'
+          smog: 'y'
         }
       },
       axis: {
@@ -362,18 +363,26 @@ var ChartRenderer = (function(){
                   rotate: 20,
                   multiline: false
               },
-              height: 400
+              height: 10 // HACK! these ticks will be hidden
           },
-          y2: {
-            show: true
+          y: {
+            label: {
+              text: 'Reading Level',
+              position: 'outer-middle'
+            },
+            min: 6,
+            max: 12
           }
       },
       size: {
-        height: 600,
+        height: 400,
         width: width
       },
       padding: {
         right: 200
+      },
+      legend: {
+        show: false
       }
     });
   };

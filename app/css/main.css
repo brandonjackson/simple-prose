@@ -48,3 +48,16 @@ form#pasteForm{
 #controls input[type=checkbox]{
 	margin-right: 10px;
 }
+
+/* HACK! Hide ticks on X axis */
+.c3-axis-x g.tick{
+	display: none;
+}
+table.c3-tooltip{
+	width: 250px;
+}
+
+table.c3-tooltip th{
+	background: white;
+	color: black;
+}
