@@ -527,15 +527,21 @@ $(function(){
     // Run processing
     C = new Corpus(pastedText);
 
-    // Render results
-    if($("form#pasteForm input#format-chart").is(":checked")){
-      ChartRenderer.render(C);
-      $("#chart").fadeIn();
-    } else {
-      var results = TextRenderer.renderAnalyses(C);
-      $("#results").html(results).fadeIn();
-      $("#controls").fadeIn();      
-    }
+    // // Render results
+    // if($("form#pasteForm input#format-chart").is(":checked")){
+    //   ChartRenderer.render(C);
+    //   $("#chart").fadeIn();
+    // } else {
+    //   var results = TextRenderer.renderAnalyses(C);
+    //   $("#results").html(results).fadeIn();
+    //   $("#controls").fadeIn();      
+    // }
+
+    ChartRenderer.render(C);
+    $("#chart").fadeIn();
+    var results = TextRenderer.renderAnalyses(C);
+    $("#results").html(results).fadeIn();
+    $("#controls").fadeIn();    
 
     event.preventDefault();
     pasted = pastedText;

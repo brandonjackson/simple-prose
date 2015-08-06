@@ -45,25 +45,26 @@
           <label for="pastedText">Paste Text Here</label>
           <textarea class="form-control" rows="15" id="pastedText"></textarea>
         </div>
-        <div class="form-group" id="format-menu">
+        <!--<div class="form-group" id="format-menu">
 
-          <h3>Results Format</h3>
-          <label>
+          <label>Results Format</label><br />
+          <label class="radio-inline">
             <input type="radio" value="graph" name="format" id="format-chart" checked />
             Chart
           </label>
-
-          <label>
+          <label class="radio-inline">
             <input type="radio" value="text" name="format" id="format-text"  />
             Text
           </label>
-        </div>
+        </div>-->
         <button type="submit" class="btn btn-default">Submit</button>
       </form>
+    </div>
 
-      <div id="chart"></div>
+      <div id="chart" class="col-lg-12">
+      </div>
 
-      <div id="results" style="display: none;" class="hide-ngram-variable-colors show-ngram"></div>
+      <div id="results" style="display: none;" class="hide-ngram-variable-colors show-ngram col-lg-10"></div>
 
       </div>
 
