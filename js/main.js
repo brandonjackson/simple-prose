@@ -339,6 +339,7 @@ var ChartRenderer = (function(){
     for(var i = 0; i < smog.length; i++){
       smog[i] = smog[i].toFixed(1);
     }
+    var upperLimit = _.max([12, _.max(smog)]);
     smog.unshift('SMOG Reading Level'); // adds name of metric for use in c3 display
 
     var ease = _.pluck(corpus.sentences,"readabilityEase");
@@ -371,7 +372,7 @@ var ChartRenderer = (function(){
               position: 'outer-middle'
             },
             min: 6,
-            max: 12
+            max: upperLimit
           }
       },
       size: {
